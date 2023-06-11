@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlTypes;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,9 +19,11 @@ namespace SeaBattle
         public int Size;
         public string[,] map;
         public Button[,] buttons;
-        public Ship[] ships;
-        public bool isEmpty;
+        private Ship[] ships;
         public int placedShips = 0;
+
+        public delegate void FieldEmpty(object sender, EventArgs e);
+        public event FieldEmpty OnFieldEmpty;
         public Field(int size)
         {
             Size = size;
@@ -27,8 +32,6 @@ namespace SeaBattle
             buttons = new Button[size, size];
 
             ships = new Ship[10];
-
-            isEmpty = false;
 
             map = new string[size, size];
             for (int i = 0; i < this.Size; i++)
@@ -42,7 +45,7 @@ namespace SeaBattle
                     button.BackColor = Color.White;
                     if(j == 0 || i == 0)
                     {
-                        button.BackColor = Color.Gray;
+                        //button.BackColor = Color.Gray;
                         if (i == 0 && j > 0)
                         {
                             button.Text = alphabet[j - 1].ToString();
@@ -97,6 +100,7 @@ namespace SeaBattle
                 {
                     map[coord.X, coord.Y] = "Empty";
                     buttons[coord.X, coord.Y].BackColor = Color.White;
+                    //buttons[coord.X, coord.Y].BackColor = Color.W;
                 }
                 if(CheckShipPosition(ships[shipIndex].GetShipCoords()) && CheckShipConflicts(ships[shipIndex].GetAroundCoords()))
                 {
@@ -108,7 +112,7 @@ namespace SeaBattle
                     foreach (Coords coord in ships[shipIndex].GetShipCoords())
                     {
                         map[coord.X, coord.Y] = "Ship" + shipIndex;
-                        buttons[coord.X, coord.Y].BackColor = Color.Red;
+                        buttons[coord.X, coord.Y].BackColor = Color.LightSkyBlue;
                     }
                 }
                 else
@@ -117,7 +121,7 @@ namespace SeaBattle
                     foreach (Coords coord in coordsBefore)
                     {
                         map[coord.X, coord.Y] = "Ship" + shipIndex;
-                        buttons[coord.X, coord.Y].BackColor = Color.Red;
+                        buttons[coord.X, coord.Y].BackColor = Color.LightSkyBlue;
                     }
                 }
             }
@@ -162,7 +166,7 @@ namespace SeaBattle
             foreach(Coords coordsPair in ship.GetShipCoords())
             {
                 this.map[coordsPair.X, coordsPair.Y] = "Ship" + placedShips;
-                if(setVisible) this.buttons[coordsPair.X, coordsPair.Y].BackColor = Color.Red;
+                if(setVisible) this.buttons[coordsPair.X, coordsPair.Y].BackColor = Color.LightSkyBlue;
             }
             placedShips++;
         }
@@ -171,10 +175,20 @@ namespace SeaBattle
             bool isHit;
             if (map[coords.X, coords.Y].Length > 4 && map[coords.X, coords.Y].Substring(0, 4) == "Ship")
             {
-                buttons[coords.X, coords.Y].BackColor = Color.Blue;
-                buttons[coords.X, coords.Y].Text = "X";
+                string absolutePath = Path.Combine(Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.FullName, "SeaBattle", "Images", "Hit.png");
+                buttons[coords.X, coords.Y].BackgroundImage = Image.FromFile(absolutePath);
+                buttons[coords.X, coords.Y].BackgroundImageLayout = ImageLayout.Stretch;
+                buttons[coords.X, coords.Y].BackColor = Color.PowderBlue;
                 int shipNum = Convert.ToInt32(map[coords.X, coords.Y].Substring(4));
-                if (ships[shipNum].CheckDestroyed(map)) DrawShipAround(ships[shipNum].GetAroundCoords());
+                map[coords.X, coords.Y] = "Hit";
+                if (ships[shipNum].CheckDestroyed(map)) {
+                    DrawShipAround(ships[shipNum].GetAroundCoords());
+                    if (CheckFieldEmpty())
+                    {
+                        OnFieldEmpty?.Invoke(null, null);
+                        return false;
+                    }
+                } 
                 isHit = true;
                 return isHit;
             }
@@ -182,7 +196,7 @@ namespace SeaBattle
             {
                 isHit = false;
                 map[coords.X, coords.Y] = "Miss";
-                buttons[coords.X, coords.Y].BackColor = Color.Black;
+                buttons[coords.X, coords.Y].BackColor = Color.DarkGray;
                 return isHit;
             }
             else
@@ -193,7 +207,18 @@ namespace SeaBattle
         }
         private void DrawShipAround(Coords[,] coords)
         {
-
+            for(int i = 0; i < coords.GetLength(0); i++)
+            {
+                for(int j = 0; j < coords.GetLength(1); j++)
+                {
+                    if (coords[i, j].X > 0 && coords[i, j].Y > 0 && coords[i, j].X < Size && coords[i, j].Y < Size && map[coords[i, j].X, coords[i, j].Y] == "Empty")
+                    {
+                        map[coords[i, j].X, coords[i, j].Y] = "Around-Ship";
+                        buttons[coords[i, j].X, coords[i, j].Y].Text = "X";
+                        buttons[coords[i, j].X, coords[i, j].Y].ForeColor = Color.Red;
+                    }
+                }
+            }
         }
         public bool CheckFieldEmpty()
         {
@@ -202,6 +227,46 @@ namespace SeaBattle
                 if (!ship.isDestroyed) return false;
             }
             return true;
+        }
+        public void MoveShip(int index, Coords coords)
+        {
+            List<Coords> prevCoords = ships[index].GetShipCoords();
+            Coords prevPosition = ships[index].Position;
+            ships[index].Position = coords;
+            foreach (Coords coord in prevCoords)
+            {
+                map[coord.X, coord.Y] = "Empty";
+            }
+            if (CheckShipPosition(ships[index].GetShipCoords()) && CheckShipConflicts(ships[index].GetAroundCoords()))
+            {
+                foreach (Coords coord in prevCoords)
+                {
+                    buttons[coord.X, coord.Y].BackColor = Color.White;
+                }
+                foreach (Coords coord in ships[index].GetShipCoords())
+                {
+                    map[coord.X, coord.Y] = "Ship" + index;
+                    buttons[coord.X, coord.Y].BackColor = Color.LightSkyBlue;
+                }
+            }
+            else
+            {
+                foreach (Coords coord in prevCoords)
+                {
+                    map[coord.X, coord.Y] = "Ship" + index;
+                }
+                Console.WriteLine(default(int));
+                ships[index].Position = prevPosition;
+            }
+        }
+        public int GetShipsDestroyed()
+        {
+            int count = 0;
+            foreach(Ship ship in ships)
+            {
+                if (ship.isDestroyed) count++;
+            }
+            return count;
         }
     }
 }

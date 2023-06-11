@@ -25,7 +25,6 @@ namespace SeaBattle
                 for (int i = Position.Y; i < Position.Y + Size; i++)
                 {
                     Coords.Add(new Coords(Position.X, i));
-                    Console.WriteLine(new Coords(Position.X, i).ToString());
                 }
             }
             else
@@ -39,7 +38,7 @@ namespace SeaBattle
         }
         public Coords[,] GetAroundCoords()
         {
-            if(this.isHorizontal)
+            if (this.isHorizontal)
             {
                 Coords[,] coords = new Coords[3, Size + 2];
                 for (int i = 0; i < 3; i++)
@@ -47,9 +46,7 @@ namespace SeaBattle
                     for (int j = 0; j < Size + 2; j++)
                     {
                         coords[i, j] = new Coords(Position.X + i - 1, Position.Y + j - 1);
-                        Console.Write(coords[i, j].ToString() + " ");
                     }
-                    Console.WriteLine();
                 }
                 return coords;
             }
@@ -61,9 +58,7 @@ namespace SeaBattle
                     for (int j = 0; j < 3; j++)
                     {
                         coords[i, j] = new Coords(Position.X + i - 1, Position.Y + j - 1);
-                        Console.Write(coords[i, j].ToString() + " ");
                     }
-                    Console.WriteLine();
                 }
                 return coords;
             }

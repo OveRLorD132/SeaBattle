@@ -1,9 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32901.82
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SeaBattle", "SeaBattle\SeaBattle.csproj", "{B08DBF5C-980A-48DB-9052-395C625BE581}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{B4F65A91-E013-4FDC-811C-FA638D0D1374}"
+	ProjectSection(SolutionItems) = preProject
+		SeaBattle\Images\back.jpg = SeaBattle\Images\back.jpg
+		SeaBattle\Images\Hit.png = SeaBattle\Images\Hit.png
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
